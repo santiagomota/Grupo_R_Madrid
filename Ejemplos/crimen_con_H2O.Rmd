@@ -3,12 +3,12 @@ title:  "Análisis del crimen en L.A. con H2O"
 author: "Santiago Mota (santiago_mota@yahoo.es)"
 date:   "`r Sys.Date()`"
 output:
-  pdf_document:  default
   html_document: 
     theme:       cosmo  # "default", "cerulean", "journal", "flatly", "readable", "spacelab", "united", "cosmo", "lumen", "paper", "sandstone", "simplex", "yeti"
     highlight:   tango  # "default", "tango", "pygments", "kate", "monochrome", "espresso", "zenburn", "haddock", "textmate"
     toc:         true
     toc_float:   true
+  pdf_document:  default
   word_document: default
 license:  by-nc-sa
 urlcolor: blue
@@ -36,9 +36,6 @@ library(chron)
 if(!is.element("pROC", installed.packages()[, 1]))
       install.packages("pROC", repos = 'http://cran.us.r-project.org')
 library(pROC)
-if(!is.element("readr", installed.packages()[, 1]))
-      install.packages("readr", repos = 'http://cran.us.r-project.org')
-library(readr)
 ```
 
 La de H2O la tratamos aparte. Si hay que instalarla o actualizarla, es mejor descargarla desde su cuenta de AWS
@@ -56,7 +53,7 @@ if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }
 }
 
 # Now we download, install and initialize the H2O package for R.
-install.packages("h2o", type="source", repos="http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/R")
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
 ```
 
 Ahora ya podemos cargar el paquete
@@ -72,7 +69,7 @@ Cargamos los datos (acordándonos de modificar la ruta)
 
 ```{r}
 # Datos descargados el 15-02-2018
-crime_data <- read.csv('/media/enero/Disco1/Varios/R/Archivos/clases_r/h2o/data/Crime_Data_from_2010_to_Present-08-05-2018.csv')
+crime_data <- read.csv('/media/enero/Disco1/Varios/R/Archivos/clases_r/h2o/data/Crime_Data_from_2010_to_Present-15-02-2018.csv')
 ```
 
 Un **summary()**
@@ -566,27 +563,14 @@ crime_data$target <- as.factor(crime_data$target)
 ## Crear training y validating
 
 ```{r}
-# training hasta el año agosto 2017
-training   <- crime_data[crime_data$date_occurred<as.Date('2017-09-01'), ]
+# training hasta el año 2016
+training   <- crime_data[crime_data$date_occurred<as.Date('2017-01-01'), ]
 
-# Validating el año septiembre-diciembre 2017
-validating <- crime_data[(crime_data$date_occurred>as.Date('2017-08-31') & crime_data$date_occurred<as.Date('2018-01-01')), ]
+# Validating el año 2017
+validating <- crime_data[(crime_data$date_occurred>as.Date('2016-12-31') & crime_data$date_occurred<as.Date('2018-01-01')), ]
 
 # testing el año 2018
 testing    <- crime_data[crime_data$date_occurred>as.Date('2017-12-31'), ]
-```
-
-## Grabar datos
-
-```{r, eval=FALSE}
-# training hasta el año 2016
-write_csv(training, './data/training.csv')
-
-# Validating el año 2017
-write_csv(validating, './data/validating.csv')
-
-# testing el año 2018
-write_csv(testing, './data/testing.csv')
 ```
 
 
@@ -595,12 +579,10 @@ write_csv(testing, './data/testing.csv')
 ```{r}
 # Iniciamos con todos los cores posibles y la memoria de 32G (si hay menos se
 # autoregula)
-# h2o.init(nthreads=-1, max_mem_size="32G")
+h2o.init(nthreads=-1, max_mem_size="32G")
 
 # Si queremos conectar a un cluster que ya está funcionando
-# h2o.init(ip="mycluster", port=55555)
-
-h2o.init(nthreads=-1, port=55555, max_mem_size="95G")
+# h2o.init(ip="mycluster", port=55555) 
 ```
 
 Pasamos los objetos a H2O y les damos nombre para poder identificarlos
